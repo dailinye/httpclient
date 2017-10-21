@@ -112,6 +112,7 @@ public:
 				return item.second;
 			}
 		}
+		return "";
 	}
 
 	void setHeaders(const HeadersType& headers)
@@ -225,7 +226,7 @@ public:
 		return HTTP_OK;
 	}
 
-	void sertUri(const std::string& uri)
+	void setUri(const std::string& uri)
 	{
 		uri_ = uri;
 	}
@@ -500,11 +501,25 @@ private:
 		}
 
 		curl_easy_setopt_safe(CURLOPT_READDATA, &requestBody_);
-		curl_easy_setopt_safe(CURLOPT_READFUNCTION, curlSendFunc);
+		if (requestBody_.getContentCallback() != nullptr)
+		{
+			curl_easy_setopt_safe(CURLOPT_READFUNCTION, requestBody_.getContentCallback());
+		}
+		else
+		{
+			curl_easy_setopt_safe(CURLOPT_READFUNCTION, curlSendFunc);
+		}
 		curl_easy_setopt_safe(CURLOPT_INFILESIZE_LARGE, contentLength_);
 
 		curl_easy_setopt_safe(CURLOPT_WRITEDATA, &responseBody_);
-		curl_easy_setopt_safe(CURLOPT_WRITEFUNCTION, curlRecieveFunc);
+		if (responseBody_.getContentCallback() != nullptr)
+		{
+			curl_easy_setopt_safe(CURLOPT_WRITEFUNCTION, responseBody_.getContentCallback());
+		}
+		else
+		{
+			curl_easy_setopt_safe(CURLOPT_WRITEFUNCTION, curlRecieveFunc);
+		}
 
 		curl_easy_setopt_safe(CURLOPT_HEADERDATA, this);
 		curl_easy_setopt_safe(CURLOPT_HEADERFUNCTION, curlHeaderFunc);
@@ -640,6 +655,7 @@ private:
 			}
 			// swap the old memory
 			::memcpy(memory, buf.buffer, buf.offset);
+			delete buf.buffer;
 			// update the length and memory
 			buf.buffer = memory;
 			buf.length = memorySize;
@@ -797,13 +813,13 @@ int32_t HttpClient::release()
 	return int32_t();
 }
 
-void HttpClient::sertUri(const std::string & uri)
+void HttpClient::setUri(const std::string & uri)
 {
 	if (!impl_)
 	{
 		return;
 	}
-	return impl_->sertUri(uri);
+	return impl_->setUri(uri);
 }
 
 std::string HttpClient::getUri() const

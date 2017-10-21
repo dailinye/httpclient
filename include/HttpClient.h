@@ -218,7 +218,7 @@ public:
 	static int32_t init();
 	static int32_t release();
 
-	void sertUri(const std::string& uri);
+	void setUri(const std::string& uri);
 	std::string getUri() const;
 
 	void setRequestHeaders(const HttpHeaders& httpHeaders);
