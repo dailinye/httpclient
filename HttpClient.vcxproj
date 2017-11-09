@@ -90,11 +90,11 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;HTTP_CLIENT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>./include;./3rd/curl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include;./3rd/curl/include;./3rd/openssl/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>./3rd/curl/lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>./3rd/curl/lib;./3rd/openssl/lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

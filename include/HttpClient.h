@@ -51,6 +51,28 @@ struct HTTP_CLIENT_API AutoBuffer
 		}
 	}
 
+	AutoBuffer(const std::string& str)
+		:buffer(nullptr)
+		,length(0)
+		,offset(0)
+	{
+		if (!str.empty())
+		{
+			buffer = new (std::nothrow)unsigned char[str.size()];
+			if (buffer != nullptr)
+			{
+				memcpy(buffer, str.c_str(), str.size());
+				length = str.size();
+				offset = 0;
+			}
+		}
+	}
+
+	std::string AsString()
+	{
+		return std::string((char*)buffer, offset);
+	}
+
 	AutoBuffer& operator= (const AutoBuffer& rhs)
 	{
 		if (&rhs != this)
@@ -110,35 +132,83 @@ struct HTTP_CLIENT_API AutoBuffer
 enum HTTP_ERROR_CODE
 {
 	HTTP_OK = (0),
+	HTTP_ERROR = (-1000),
 	HTTP_CURL_ERROR = (-2000),
-	HTTP_ERROR = (-3000),
-	HTTP_OUT_OF_MEMORY = (HTTP_ERROR - 1),
-	HTTP_NOT_IMPLEMENT = (HTTP_ERROR - 2),
-	HTTP_INVALID_PARAM = (HTTP_ERROR - 3),
+	HTTP_INVALID_PARAM = (HTTP_ERROR - 1),
+	HTTP_OUT_OF_MEMORY = (HTTP_ERROR - 2),
+	HTTP_NOT_IMPLEMENT = (HTTP_ERROR - 3),
 	HTTP_INITIAL_REQUEST_FAILED = (HTTP_ERROR - 4)
 };
 
 /* common http header key*/
+#ifndef HTTP_HEADER_AUTHORIZATION
+#define HTTP_HEADER_AUTHORIZATION ("Authorization")
+#endif
+
+#ifndef HTTP_HEADER_AUTHORIZATION_TYPE
+#define HTTP_HEADER_AUTHORIZATION_TYPE ("WWW-Authenticate")
+#endif
+
 #ifndef HTTP_HEADER_CONTENT_LENGTH
 #define HTTP_HEADER_CONTENT_LENGTH ("Content-Length")
+#endif
+
+#ifndef HTTP_HEADER_CONTENT_TYPE
+#define HTTP_HEADER_CONTENT_TYPE ("Content-Type")
+#endif
+
+#ifndef HTTP_HEADER_ACCEPT
+#define HTTP_HEADER_ACCEPT ("Accept")
+#endif
+
+#ifndef HTTP_HEADER_USER_AGENT
+#define HTTP_HEADER_USER_AGENT ("User-Agent")
 #endif
 /* common http header key*/
 
 /*http status codes*/
-#define HTTP_STATUS_OK (HTTP_CURL_ERROR-200)
-#define HTTP_CREATED (HTTP_CURL_ERROR-201)
-#define HTTP_BAD_REQUEST (HTTP_CURL_ERROR-400)
-#define HTTP_UNAUTHORIZED (HTTP_CURL_ERROR-401)
-#define HTTP_FORBIDDEN (HTTP_CURL_ERROR-403)
-#define HTTP_NOT_FOUND (HTTP_CURL_ERROR-404)
-#define HTTP_NOT_ALLOWD (HTTP_CURL_ERROR-405)
-#define HTTP_CONFLICT (HTTP_CURL_ERROR-409)
-#define HTTP_PRECONDITION_FAILED (HTTP_CURL_ERROR-412)
-#define HTTP_EXCEPTATION_FAILED (HTTP_CURL_ERROR-417)
-#define HTTP_LOCKED (HTTP_CURL_ERROR-423)
-#define HTTP_INTERNAL_ERROR (HTTP_CURL_ERROR-500)
-#define HTTP_SERVICE_UNVAILABLE (HTTP_CURL_ERROR-503)
-#define HTTP_INSUFFICIENT_STORAGE (HTTP_CURL_ERROR-507)
+#ifndef HTTP_STATUS_OK
+#define HTTP_STATUS_OK (HTTP_ERROR-200)
+#endif
+#ifndef HTTP_CREATED
+#define HTTP_CREATED (HTTP_ERROR-201)
+#endif
+#ifndef HTTP_BAD_REQUEST
+#define HTTP_BAD_REQUEST (HTTP_ERROR-400)
+#endif
+#ifndef HTTP_UNAUTHORIZED
+#define HTTP_UNAUTHORIZED (HTTP_ERROR-401)
+#endif
+#ifndef HTTP_FORBIDDEN
+#define HTTP_FORBIDDEN (HTTP_ERROR-403)
+#endif
+#ifndef HTTP_NOT_FOUND
+#define HTTP_NOT_FOUND (HTTP_ERROR-404)
+#endif
+#ifndef HTTP_NOT_ALLOWD
+#define HTTP_NOT_ALLOWD (HTTP_ERROR-405)
+#endif
+#ifndef HTTP_CONFLICT
+#define HTTP_CONFLICT (HTTP_ERROR-409)
+#endif
+#ifndef HTTP_PRECONDITION_FAILED
+#define HTTP_PRECONDITION_FAILED (HTTP_ERROR-412)
+#endif
+#ifndef HTTP_EXCEPTATION_FAILED
+#define HTTP_EXCEPTATION_FAILED (HTTP_ERROR-417)
+#endif
+#ifndef HTTP_LOCKED
+#define HTTP_LOCKED (HTTP_ERROR-423)
+#endif
+#ifndef HTTP_INTERNAL_ERROR
+#define HTTP_INTERNAL_ERROR (HTTP_ERROR-500)
+#endif
+#ifndef HTTP_SERVICE_UNVAILABLE
+#define HTTP_SERVICE_UNVAILABLE (HTTP_ERROR-503)
+#endif
+#ifndef HTTP_INSUFFICIENT_STORAGE
+#define HTTP_INSUFFICIENT_STORAGE (HTTP_ERROR-507)
+#endif
 /*http status codes*/
 
 class HTTP_CLIENT_API HttpHeaders
@@ -260,6 +330,11 @@ public:
 	/* request content length*/
 	void setContentLength(const int64_t length);
 	int64_t getContentLength() const;
+
+
+public:
+	static std::string base64Encode(const std::string& value);
+	static std::string base64Decode(const std::string& value);
 
 private:
 	class Impl;

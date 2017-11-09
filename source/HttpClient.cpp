@@ -3,8 +3,13 @@
 #include <curl/curl.h>
 #include <locale>
 #include <algorithm>
+#include <openssl/pem.h>
+#include <openssl/bio.h>
+#include <openssl/evp.h>
 
 #pragma comment(lib, "libcurl.lib")
+#pragma comment(lib, "libeay32.lib")
+#pragma comment(lib, "ssleay32.lib")
 
 #ifndef curl_easy_setopt_safe
 #define curl_easy_setopt_safe(opt, val)                         \
@@ -415,7 +420,7 @@ public:
 			return (HTTP_CURL_ERROR - ret);
 		}
 		// convert http status code
-		httpStatusCode = (HTTP_CURL_ERROR - httpStatusCode);
+		httpStatusCode = (HTTP_ERROR - httpStatusCode);
 		if (HTTP_STATUS_OK != httpStatusCode)
 		{
 			// set response headers
@@ -537,17 +542,34 @@ private:
 		}
 
 #ifdef _DEBUG
-		//curl_easy_setopt_safe(CURLOPT_VERBOSE, 1L);
+		curl_easy_setopt_safe(CURLOPT_VERBOSE, 1L);
 #endif
 		return HTTP_OK;
 	}
 
 	int32_t initHeaders()
 	{
+		static std::list<std::string> unUrlEncodeHeader = { 
+			HTTP_HEADER_AUTHORIZATION,
+			HTTP_HEADER_CONTENT_LENGTH,
+			HTTP_HEADER_AUTHORIZATION_TYPE,
+			HTTP_HEADER_CONTENT_TYPE,
+			HTTP_HEADER_ACCEPT,
+			HTTP_HEADER_USER_AGENT
+		};
+
 		curl_slist *headers = nullptr;
 		for each (const auto& item in requestHeaders_.getHeaders())
 		{
-			std::string header = Utility::urlEncode(item.first) + ":" +  Utility::urlEncode(item.second);
+			std::string header;
+			for each (auto i in unUrlEncodeHeader)
+			{
+				if (i == item.first)
+				{
+					header = item.first + ":" + item.second;
+				}
+			}
+			header = !header.empty() ? header : Utility::urlEncode(item.first) + ":" +  Utility::urlEncode(item.second);
 			headers = curl_slist_append(headers, header.c_str());
 			if (nullptr == headers)
 			{
@@ -1108,4 +1130,58 @@ int64_t HttpClient::getContentLength() const
 		return 0;
 	}
 	return impl_->getContentLength();
+}
+
+std::string HttpClient::base64Encode(const std::string & value)
+{
+	if (value.empty())
+	{
+		return "";
+	}
+
+	BIO *b64, *bio;
+	BUF_MEM *bptr = NULL;	
+
+	b64 = BIO_new(BIO_f_base64());
+	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+	bio = BIO_new(BIO_s_mem());
+	bio = BIO_push(b64, bio);
+
+	BIO_write(bio, value.c_str(), value.size());
+	BIO_flush(bio);
+
+	BIO_get_mem_ptr(bio, &bptr);
+	std::string out(bptr->data, bptr->length);
+
+	BIO_free_all(bio);
+	return out;
+}
+
+std::string HttpClient::base64Decode(const std::string & value)
+{
+	if (value.empty())
+	{
+		return "";
+	}
+
+	BIO *b64, *bio;
+
+	b64 = BIO_new(BIO_f_base64());
+	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+
+	bio = BIO_new_mem_buf(value.c_str(), value.size());
+	bio = BIO_push(b64, bio);
+
+	char *buf = new (std::nothrow)char[value.size()];
+	if (buf == nullptr)
+	{
+		BIO_free_all(bio);
+		return "";
+	}
+
+	int size = BIO_read(bio, buf, value.size());
+	std::string out(buf, size);
+	BIO_free_all(bio);
+	delete buf;
+	return out;
 }
